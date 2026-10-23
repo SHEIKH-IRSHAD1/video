@@ -1,0 +1,3 @@
+# Installs system-level FFmpeg on Hugging Face Spaces
+ffmpeg
+libsndfile1

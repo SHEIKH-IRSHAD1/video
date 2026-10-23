@@ -1,0 +1,39 @@
+# Declarative pipeline & stage configuration
+pipeline:
+  workspace_dir: "/tmp/halal_shorts_workspace"
+  active_stages:
+    - "ethical_discovery"
+    - "audio_purification"
+    - "transcription"
+    - "scene_and_modesty_gate"
+    - "viral_fiqh_scoring"
+    - "vertical_composer"
+    - "social_publisher"
+
+discovery:
+  default_topic: "Islamic Golden Age history and productivity"
+  max_source_videos: 5
+  license_mode: "creativeCommon" # Options: creativeCommon, whitelist_only
+  whitelisted_channel_ids: []
+  min_duration_seconds: 120
+  max_duration_seconds: 1800
+
+compliance:
+  strip_music_with_demucs: true
+  demucs_model: "htdemucs"
+  nsfw_confidence_threshold: 0.15
+  gemini_model: "gemini-3.8-flash"
+  fallback_gemini_model: "gemini-3.5-flash-lite"
+
+clipping:
+  num_clips_per_video: 3
+  min_clip_duration: 25.0
+  max_clip_duration: 58.0
+  aspect_ratio_mode: "blurred_pad" # Options: blurred_pad, center_crop
+  target_lufs: -14.0
+
+publishing:
+  enable_youtube_shorts: false
+  enable_instagram_reels: false
+  enable_tiktok: false
+  public_staging_bucket_url: ""
