@@ -1,1 +1,81 @@
+# Automated GitHub Actions workflow + MP4 Artifact Downloader
+name: Automated Halal Shorts Cloud Pipeline
 
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+    inputs:
+      search_topic:
+        description: "Topic/Niche to search for viral CC-BY videos"
+        required: true
+        default: "Islamic Golden Age history"
+      direct_video_url:
+        description: "Optional: Direct YouTube URL (leave blank to auto-discover)"
+        required: false
+        default: ""
+      num_clips:
+        description: "Number of short clips to generate (1-10)"
+        required: true
+        default: "3"
+      strip_music:
+        description: "Isolate vocals & remove instruments with Demucs (true/false)"
+        required: true
+        default: "true"
+      publish_youtube:
+        description: "Auto-upload generated clips to YouTube Shorts (true/false)"
+        required: true
+        default: "false"
+
+jobs:
+  execute-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Pre-Warm Hugging Face Space (Prevent 48h Sleep)
+        if: env.HF_SPACE_URL != ''
+        env:
+          HF_SPACE_URL: ${{ secrets.HF_SPACE_URL }}
+        run: curl -s -o /dev/null "$HF_SPACE_URL" || true
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Setup FFmpeg and FFprobe
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+      - name: Execute Halal Shorts Pipeline
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+        run: |
+          python3 cli_runner.py \
+            --topic "${{ github.event.inputs.search_topic || 'Islamic Golden Age history' }}" \
+            --video-url "${{ github.event.inputs.direct_video_url || '' }}" \
+            --num-clips "${{ github.event.inputs.num_clips || '3' }}" \
+            --strip-music "${{ github.event.inputs.strip_music || 'true' }}" \
+            --publish-youtube "${{ github.event.inputs.publish_youtube || 'false' }}" \
+            --output-dir "output_shorts"
+
+      - name: Upload Rendered Shorts as Downloadable ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-halal-shorts
+          path: output_shorts/*.mp4
+          retention-days: 7
